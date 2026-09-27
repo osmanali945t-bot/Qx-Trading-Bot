@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QUOTEX AI PRO - Login</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Roboto, sans-serif; }
+        body { background-color: #0b0e14; color: #e1e6eb; display: flex; align-items: center; justify-content: center; height: 100vh; padding: 14px; }
+        .login-card { background: #161b22; border: 1px solid #30363d; border-radius: 16px; padding: 24px; width: 100%; max-width: 400px; box-shadow: 0 12px 32px rgba(0,0,0,0.7); text-align: center; }
+        .logo { font-size: 26px; color: #2962ff; font-weight: bold; margin-bottom: 6px; display: flex; align-items: center; justify-content: center; gap: 8px; }
+        .subtitle { font-size: 12px; color: #8b949e; margin-bottom: 20px; }
+        label { font-size: 12px; color: #8b949e; display: block; text-align: left; margin-bottom: 6px; }
+        input { width: 100%; background: #0d1117; color: #fff; border: 1px solid #30363d; padding: 12px; border-radius: 8px; margin-bottom: 14px; font-size: 14px; outline: none; }
+        .btn-login { width: 100%; background: linear-gradient(135deg, #2962ff, #1e4bd8); color: #fff; border: none; padding: 14px; border-radius: 8px; font-weight: bold; font-size: 15px; cursor: pointer; margin-top: 10px; box-shadow: 0 4px 12px rgba(41,98,255,0.3); }
+        .error-msg { color: #f85149; font-size: 12px; margin-bottom: 10px; display: none; }
+    </style>
+</head>
+<body>
+    <div class="login-card">
+        <div class="logo"><i class="fa-solid fa-bolt"></i> QUOTEX AI</div>
+        <div class="subtitle">প্রবেশ করতে আপনার নাম ও ঐচ্ছিক VIP পাসওয়ার্ড দিন</div>
+        
+        <div id="errorBox" class="error-msg"></div>
+
+        <label for="username">আপনার নাম / ইউজারনেম</label>
+        <input type="text" id="username" placeholder="ဥദാ: Rahim Trader">
+
+        <label for="vipPass">VIP পাসওয়ার্ড (ঐচ্ছিক - আনলিমিটেড সিগন্যালের জন্য)</label>
+        <input type="password" id="vipPass" placeholder="VIP Password (যদি থাকে)">
+
+        <button class="btn-login" onclick="handleLogin()">ENTER TERMINAL / প্রবেশ করুন</button>
+    </div>
+
+    <script>
+        function handleLogin() {
+            const username = document.getElementById('username').value.trim();
+            const vipPass = document.getElementById('vipPass').value.trim();
+            const errorBox = document.getElementById('errorBox');
+
+            if (!username) {
+                errorBox.innerText = 'অনুগ্রহ করে আপনার নাম লিখুন।';
+                errorBox.style.display = 'block';
+                return;
+            }
+
+            fetch('/login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username: username, vip_pass: vipPass })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    window.location.href = data.redirect;
+                } else {
+                    errorBox.innerText = data.msg_bn;
+                    errorBox.style.display = 'block';
+                }
+            });
+        }
+    </script>
+</body>
+</html>

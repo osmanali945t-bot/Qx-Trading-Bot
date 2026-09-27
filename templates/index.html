@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QUOTEX AI PRO TERMINAL</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <script type="text/javascript" src="https://s3.tradingview.com/tv.js"></script>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Roboto, sans-serif; }
+        body { background-color: #0b0e14; color: #e1e6eb; padding: 14px; max-width: 520px; margin: 0 auto; }
+        
+        .header { 
+            background: linear-gradient(135deg, #161b22, #1f242d); padding: 14px 16px; border-radius: 14px; 
+            border: 1px solid #2d333b; margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center; 
+        }
+        .title { color: #2962ff; font-weight: bold; font-size: 15px; display: flex; align-items: center; gap: 6px; }
+        .user-welcome { font-size: 11px; color: #8b949e; margin-top: 2px; }
+        
+        .badge-vip { background: linear-gradient(45deg, #238636, #2ea043); color: #fff; padding: 5px 10px; border-radius: 20px; font-size: 11px; font-weight: bold; white-space: nowrap; }
+        .badge-free { background: #30363d; color: #8b949e; padding: 5px 10px; border-radius: 20px; font-size: 11px; white-space: nowrap; }
+
+        .card { background: #161b22; border: 1px solid #21262d; border-radius: 14px; padding: 18px; margin-bottom: 15px; }
+        .card-title { font-size: 15px; color: #2962ff; font-weight: 600; margin-bottom: 14px; display: flex; align-items: center; gap: 6px; }
+        
+        label { font-size: 12px; color: #8b949e; display: block; margin-bottom: 6px; }
+        select { width: 100%; background: #0d1117; color: #fff; border: 1px solid #30363d; padding: 12px; border-radius: 8px; margin-bottom: 14px; font-size: 14px; outline: none; }
+        
+        .chart-box { height: 260px; width: 100%; border-radius: 10px; overflow: hidden; border: 1px solid #30363d; background: #131722; }
+
+        .btn-analyze { width: 100%; background: linear-gradient(135deg, #2962ff, #1e4bd8); color: #fff; border: none; padding: 14px; border-radius: 8px; font-weight: bold; font-size: 15px; cursor: pointer; margin-top: 10px; box-shadow: 0 4px 12px rgba(41,98,255,0.3); }
+        .btn-vip-open { width: 100%; background: #238636; color: #fff; border: none; padding: 11px; border-radius: 8px; font-weight: bold; font-size: 13px; margin-top: 10px; cursor: pointer; }
+        .btn-result { width: 100%; background: #8957e5; color: #fff; border: none; padding: 12px; border-radius: 8px; font-weight: bold; font-size: 13px; margin-top: 10px; cursor: pointer; display: none; }
+
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); display: none; align-items: center; justify-content: center; z-index: 9999; backdrop-filter: blur(5px); }
+        .modal-box { background: #161b22; border: 1px solid #2962ff; border-radius: 16px; padding: 20px; width: 92%; max-width: 420px; text-align: center; box-shadow: 0 12px 32px rgba(0,0,0,0.7); }
+        .modal-icon { font-size: 34px; margin-bottom: 8px; }
+        .msg-bn { color: #f0f6fc; font-size: 13px; font-weight: 600; margin-bottom: 14px; }
+        
+        .signal-card { background: #0d1117; border: 1px dashed #2962ff; border-radius: 10px; padding: 12px; text-align: left; margin: 10px 0; font-size: 12px; }
+        .tg-line { margin-bottom: 7px; display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; }
+        .tg-label { color: #8b949e; min-width: 95px; }
+        .tg-value { font-weight: bold; color: #fff; text-align: right; }
+
+        .modal-btn { background: #2962ff; color: #fff; border: none; padding: 11px; border-radius: 8px; font-weight: bold; cursor: pointer; width: 100%; }
+        .telegram-btn { display: block; background: #0088cc; color: #fff; text-decoration: none; padding: 10px; border-radius: 8px; font-weight: bold; font-size: 12px; margin-top: 8px; text-align: center; }
+        .close-btn { background: transparent; border: 1px solid #30363d; color: #8b949e; margin-top: 8px; }
+        .logout-link { font-size: 11px; color: #f85149; text-decoration: none; margin-left: 8px; }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <div>
+            <div class="title"><i class="fa-solid fa-bolt"></i> QUOTEX AI PRO</div>
+            <div class="user-welcome">Trader: {{ username }} <a href="/logout" class="logout-link">(Logout)</a></div>
+        </div>
+        <div id="statusBadge">
+            {% if is_vip %}
+                <span class="badge-vip">👑 VIP ACTIVE</span>
+            {% else %}
+                <span class="badge-free">FREE PLAN</span>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-title"><i class="fa-solid fa-sliders"></i> Control Panel</div>
+        <label for="pairSelect">Select Pair / পেয়ার সিলেক্ট করুন</label>
+        <select id="pairSelect" onchange="updateLiveChart()">
+            {% for pair_name, pair_code in pairs.items() %}
+                <option value="{{ pair_name }}">{{ pair_name }}</option>
+            {% endfor %}
+        </select>
+
+        <label for="tfSelect">Candle Timeframe / টাইমফ্রেম</label>
+        <select id="tfSelect" onchange="updateLiveChart()">
+            <option value="1m">1 Minute (Scalping)</option>
+            <option value="5m" selected>5 Minutes (High Precision)</option>
+            <option value="15m">15 Minutes</option>
+        </select>
+    </div>
+
+    <div class="card">
+        <div class="card-title"><i class="fa-solid fa-chart-candlestick"></i> Live Price Action Chart</div>
+        <div id="tv_chart_container" class="chart-box"></div>
+        <!-- এখানে বাটনটি সুন্দর ও পরিষ্কার করা হয়েছে -->
+        <button class="btn-analyze" onclick="generateSignal()"><i class="fa-solid fa-wand-magic-sparkles"></i> GENERATE SIGNAL / সিগন্যাল নিন</button>
+        <button id="btnCheckResult" class="btn-result" onclick="verifyTradeResult()">🎯 CHECK TRADE RESULT (WIN/LOSS)</button>
+        <button class="btn-vip-open" onclick="openVipModal()">🔑 Unlock VIP Access</button>
+    </div>
+
+    <div id="customModal" class="modal-overlay">
+        <div class="modal-box">
+            <div class="modal-icon" id="modalIcon">⚠️</div>
+            <div class="msg-bn" id="modalMsgBn"></div>
+
+            <div id="signalResultCard" style="display: none;" class="signal-card">
+                <div class="tg-line"><span class="tg-label">📊 Asset:</span> <span class="tg-value" id="resPair">--</span></div>
+                <div class="tg-line"><span class="tg-label">🎯 Direction:</span> <span class="tg-value" id="resSignal" style="color: #2ea043;">--</span></div>
+                <div class="tg-line"><span class="tg-label">⏱️ Expiry Time:</span> <span class="tg-value" id="resExpiry" style="color: #f0883e;">--</span></div>
+                <div class="tg-line"><span class="tg-label">📍 Price Ref:</span> <span class="tg-value" id="resEntry">--</span></div>
+                <div class="tg-line"><span class="tg-label">🛡️ PA Zone:</span> <span class="tg-value" id="resPA" style="color: #2962ff; font-size: 11px;">--</span></div>
+                <div class="tg-line" style="border-top: 1px solid #21262d; padding-top: 4px;"><span class="tg-label">🔄 Status:</span> <span class="tg-value" id="resRemaining">--</span></div>
+            </div>
+
+            <div id="tradeResultBox" style="display: none;" class="signal-card">
+                <div class="tg-line"><span class="tg-label">📊 Status:</span> <span class="tg-value" id="finalResultText">--</span></div>
+                <div class="tg-line"><span class="tg-label">📍 Entry:</span> <span class="tg-value" id="chkEntry">--</span></div>
+                <div class="tg-line"><span class="tg-label">🏁 Exit:</span> <span class="tg-value" id="chkExit">--</span></div>
+            </div>
+
+            <div id="vipSection" style="display: none;">
+                <input type="password" id="vipPasswordInput" placeholder="Enter VIP Password" style="width:100%; background:#0d1117; color:#fff; border:1px solid #30363d; padding:11px; border-radius:8px; margin-bottom:10px; outline:none;">
+                <button class="modal-btn" onclick="submitVipPass()" style="background: #238636;">Unlock Access</button>
+                <a href="https://t.me/osman114452" target="_blank" class="telegram-btn"><i class="fa-brands fa-telegram"></i> Get VIP Pass</a>
+            </div>
+
+            <button class="modal-btn close-btn" onclick="closeModal()">Close / বন্ধ করুন</button>
+        </div>
+    </div>
+
+    <script>
+        const pairsMap = {
+            'EUR/USD': 'FX_IDC:EURUSD', 'GBP/USD': 'FX_IDC:GBPUSD', 'USD/JPY': 'FX_IDC:USDJPY',
+            'AUD/USD': 'FX_IDC:AUDUSD', 'USD/CAD': 'FX_IDC:USDCAD', 'USD/CHF': 'FX_IDC:USDCHF',
+            'NZD/USD': 'FX_IDC:NZDUSD', 'EUR/GBP': 'FX_IDC:EURGBP', 'EUR/JPY': 'FX_IDC:EURJPY',
+            'GBP/JPY': 'FX_IDC:GBPJPY', 'AUD/JPY': 'FX_IDC:AUDJPY', 'EUR/AUD': 'FX_IDC:EURAUD'
+        };
+        const tfMap = { '1m': '1', '5m': '5', '15m': '15' };
+        let activeTrade = null;
+
+        function initTradingViewChart(symbol, interval) {
+            document.getElementById('tv_chart_container').innerHTML = '';
+            new TradingView.widget({
+                "autosize": true, "symbol": symbol, "interval": interval, "timezone": "Etc/UTC",
+                "theme": "dark", "style": "1", "locale": "en", "toolbar_bg": "#131722",
+                "enable_publishing": false, "hide_top_toolbar": true, "hide_legend": true,
+                "save_image": false, "container_id": "tv_chart_container", "hide_volume": true
+            });
+        }
+
+        function updateLiveChart() {
+            const pair = document.getElementById('pairSelect').value;
+            const tf = document.getElementById('tfSelect').value;
+            initTradingViewChart(pairsMap[pair] || 'FX_IDC:EURUSD', tfMap[tf] || '5');
+        }
+
+        window.onload = function() { updateLiveChart(); };
+
+        function showModal(icon, bn, isVip = false, isSignal = false, data = null, isRes = false, resData = null) {
+            document.getElementById('modalIcon').innerText = icon;
+            document.getElementById('modalMsgBn').innerText = bn;
+            document.getElementById('vipSection').style.display = isVip ? 'block' : 'none';
+            document.getElementById('signalResultCard').style.display = isSignal ? 'block' : 'none';
+            document.getElementById('tradeResultBox').style.display = isRes ? 'block' : 'none';
+            
+            if (isSignal && data) {
+                document.getElementById('resPair').innerText = data.pair;
+                document.getElementById('resSignal').innerText = data.signal_type;
+                document.getElementById('resExpiry').innerText = data.expiry;
+                document.getElementById('resEntry').innerText = data.entry_price;
+                document.getElementById('resPA').innerText = data.pa_zone;
+                document.getElementById('resRemaining').innerText = data.remaining;
+            }
+            if (isRes && resData) {
+                document.getElementById('finalResultText').innerText = resData.result_text;
+                document.getElementById('finalResultText').style.color = resData.color_code;
+                document.getElementById('chkEntry').innerText = resData.entry_price;
+                document.getElementById('chkExit').innerText = resData.exit_price;
+            }
+            document.getElementById('customModal').style.display = 'flex';
+        }
+
+        function openVipModal() { showModal('🔑', 'ভিআইপি পাসওয়ার্ড দিয়ে আনলক করুন', true); }
+        function closeModal() { document.getElementById('customModal').style.display = 'none'; }
+
+        function generateSignal() {
+            const pair = document.getElementById('pairSelect').value;
+            const tf = document.getElementById('tfSelect').value;
+
+            fetch('/analyze', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ pair: pair, timeframe: tf })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    activeTrade = data;
+                    document.getElementById('btnCheckResult').style.display = 'block';
+                    showModal('📈', 'সফলভাবে হাই-একিউরেসি সিগন্যাল জেনারেট হয়েছে:', false, true, data);
+                } else if (data.status === 'limit_reached') {
+                    showModal('🔒', data.msg_bn, true);
+                } else {
+                    showModal('⚠️', data.msg_bn);
+                }
+            });
+        }
+
+        function verifyTradeResult() {
+            if (!activeTrade) return;
+            fetch('/check-result', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    pair: activeTrade.pair,
+                    entry_price: activeTrade.entry_price,
+                    action_code: activeTrade.action_code,
+                    timeframe: activeTrade.timeframe
+                })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    const icon = data.is_win ? '🎉' : '❌';
+                    const msg = data.is_win ? 'অভিনন্দন! ট্রেডটি উইন হয়েছে।' : 'দুঃখিত! এই ট্রেডটি লস হয়েছে।';
+                    showModal(icon, msg, false, false, null, true, data);
+                } else {
+                    showModal('⚠️', 'রেজাল্ট চেক করতে সমস্যা হয়েছে।');
+                }
+            });
+        }
+
+        function submitVipPass() {
+            const pass = document.getElementById('vipPasswordInput').value;
+            if (!pass) return;
+            fetch('/verify-vip', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ vip_pass: pass })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    showModal('🎉', data.msg_bn);
+                    document.getElementById('statusBadge').innerHTML = '<span class="badge-vip">👑 VIP ACTIVE</span>';
+                } else {
+                    showModal('❌', data.msg_bn, true);
+                }
+            });
+        }
+    </script>
+</body>
+      </html>
+                  
